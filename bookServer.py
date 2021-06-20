@@ -18,15 +18,20 @@ import pyodbc
 
 TRUONG_HOSTNAME='LAPTOP-QGJASAVO'
 HIEU_HOSTNAME="MON-PC"
+
+YOUR_HOSTNAME=''
+
+#define sever name and database name
+SEVER_NAME=HIEU_HOSTNAME+'\SQLEXPRESS'
+DATABASE_NAME='Socket_MMT'
+
+
 HOST = "192.168.1.105"
 PORT = 65432
 HEADER = 64
 FORMAT = "utf8"
 DISCONNECT = "x"
 
-#define sever name and database name
-SEVER_NAME=HIEU_HOSTNAME+'\SQLEXPRESS'
-DATABASE_NAME='Socket_MMT'
 
 #option
 SIGNUP = "signup"

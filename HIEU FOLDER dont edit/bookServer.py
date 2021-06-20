@@ -431,6 +431,7 @@ def handle_client(conn, addr):
 
 
 def runServer():
+    #khi client ngat ket noi thi server se bo qua try va lam tiep
     try:
         print(HOST)
         print("Waiting for Client")
@@ -579,6 +580,6 @@ sThread = threading.Thread(target=runServer)
 sThread.daemon = True 
 sThread.start()
 
-        
+# UI de dang nhap cho admin server
 app = SoccerNews_Admin()
 app.mainloop()
