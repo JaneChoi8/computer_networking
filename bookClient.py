@@ -5,7 +5,7 @@ from tkinter import ttk
 import threading
 from datetime import datetime
 
-HOST = "192.168.1.105"
+HOST = "192.168.6.102"
 PORT = 65432
 HEADER = 64
 FORMAT = "utf8"
