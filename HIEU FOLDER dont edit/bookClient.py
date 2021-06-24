@@ -1,3 +1,4 @@
+from server1 import DOWNBOOK
 import socket
 import tkinter as tk 
 from tkinter import messagebox
@@ -5,7 +6,7 @@ from tkinter import ttk
 import threading
 from datetime import datetime
 
-HOST = "192.168.1.105"
+HOST = "127.0.0.1"
 PORT = 65432
 HEADER = 64
 FORMAT = "utf8"
@@ -19,6 +20,7 @@ LOGIN = "login"
 LOGOUT = "logout"
 SEARCH = "search"
 LIST = "listall"
+DOWNBOOK = "download"
 
 ADMIN_USERNAME = 'admin'
 ADMIN_PSWD = 'database'
@@ -29,7 +31,7 @@ UPDATE_DATETIME = "upd_date_time"
 INSERT_DETAIL = "insert_detail"
 
 #GUI intialize
-class SoccerNews_App(tk.Tk):
+class Book_App(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
         
@@ -169,6 +171,24 @@ class SoccerNews_App(tk.Tk):
         except:
             curFrame.label_notice["text"] = "Error: Server is not responding"
 
+    def download(self, curFrame, sck):
+        try:
+            option = DOWNBOOK
+            sck.sendall(option.encode(FORMAT))
+
+            id = "test"
+            sck.sendall(id.encode(FORMAT))
+
+            book = sck.recv(10240).encode(FORMAT)
+
+            filename = "book.txt"
+            file = open(filename, "w")        
+            file.write(book)
+
+            file.close()
+
+        except:
+            print("error")
 
 class StartPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -266,23 +286,26 @@ class HomePage(tk.Frame):
         
         label_title = tk.Label(self, text="HOME PAGE", font=LARGE_FONT,fg='#20639b',bg="bisque2")
         button_back = tk.Button(self, text="Go back",bg="#20639b",fg='#f5ea54', command=lambda: controller.logout(self,client))
-        button_list = tk.Button(self, text="List all", bg="#20639b",fg='#f5ea54')
+        button_download = tk.Button(self, text="Download", bg="#20639b",fg='#f5ea54', 
+                            command=lambda: controller.download(self, client))
 
         label_title.pack(pady=10)
+        
 
-
-        button_list.configure(width=10)
+        button_download.configure(width=10)
         button_back.configure(width=10)
 
+        button_download.pack()
+        button_back.pack()
 
         #code them UI o day
 
         
     
-    def recieveMatches(self):
-        match = []
+    def recieveBooks(self):
+        book = []
     
-        matches = []
+        books = []
         data = ''
         while True:
             data = client.recv(1024).decode(FORMAT)
@@ -290,18 +313,18 @@ class HomePage(tk.Frame):
             if data == "end":
                 break
             
-            # match : [ID, TeamA, TeamB, Score, Date, Time]
+            # match : [ID, Book_Name, Author, Publishing_year]
 
             for i in range(6):
                 data = client.recv(1024).decode(FORMAT)
                 client.sendall(data.encode(FORMAT))
-                match.append(data) 
+                book.append(data) 
 
             
-            matches.append(match)
-            match = []
+            books.append(book)
+            book = []
 
-        return matches
+        return books
 
     def listAll(self):
         try:
@@ -310,14 +333,14 @@ class HomePage(tk.Frame):
             option = LIST
             client.sendall(option.encode(FORMAT))
             
-            matches = self.recieveMatches()
+            books = self.recieveBooks()
             
             x = self.tree.get_children()
             for item in x:
                 self.tree.delete(item)
 
             i = 0
-            for m in matches:
+            for m in books:
                 self.tree.insert(parent="", index="end", iid=i, 
                         values=( m[0], m[1], m[3], m[2], checkTime(m[4], m[5]) ) )
                 
@@ -329,17 +352,17 @@ class HomePage(tk.Frame):
             
 
 
-    def receive1Match(self):
+    def receive1Book(self):
               
         data = ""
-        match = []
+        book = []
 
         for i in range(6):
             data = client.recv(1024).decode(FORMAT)
             client.sendall(data.encode(FORMAT))
-            match.append(data) 
+            book.append(data) 
 
-        return match
+        return book
 
     
 
@@ -383,8 +406,8 @@ class HomePage(tk.Frame):
 
             self.frame_list.pack_forget()
             
-            # detail = [ID, team, event, player, time]
-            # match : [ID, TeamA, TeamB, Score, Date, Time]
+            # detail = [ID, name, author, publishing_year]
+            # book : [ID, TeamA, TeamB, Score, Date, Time]??
             
 
             client.sendall(id.encode(FORMAT))
@@ -399,7 +422,7 @@ class HomePage(tk.Frame):
             for item in x:
                 self.tree_detail.delete(item)
 
-            m = self.receive1Match()
+            m = self.receive1Book()
 
             d = self.receiveDetails()
 
@@ -416,8 +439,6 @@ class HomePage(tk.Frame):
             self.frame_detail.pack()
         except:
             self.label_notice["text"] = "Error"
-
-
 
 class AdminPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -722,7 +743,7 @@ server_address = (HOST, PORT)
 
 client.connect(server_address)
 
-app = SoccerNews_App()
+app = Book_App()
 
 
 

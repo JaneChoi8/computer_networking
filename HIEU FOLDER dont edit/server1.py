@@ -8,10 +8,11 @@ from tkinter import ttk
 from tkinter import *
 from tkinter.ttk import *
 
-LARGE_FONT = ("verdana", 13,"bold")
 
 HOST = "127.0.0.1"
-PORT = 65234
+PORT = 65432
+HIEU_HOSTNAME="MON-PC\SQLEXPRESS"
+
 SERVER_NAME = "MON-PC\SQLEXPRESS"
 DATABASE_NAME = 'BOOKSMANAGER'
 FORMAT = "utf-8"
@@ -20,169 +21,37 @@ LOGIN = "login"
 LOGOUT = "logout"
 SIGNUP = "signup"
 SEARCH = "search"
+DOWNBOOK = "download"
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 s.bind((HOST, PORT))
 s.listen(1)
 
 def run_Server():
-    print('waiting')
-    conn, addr = s.accept()
-    
-    # while True:
-    #     print('waiting')
-    #     conn, addr = s.accept()
-    #     try:
-    #          print('waiting')
-    #     #     print('Connected by', addr)
-    #     #     while True:
-    #     #         data = conn.recv(1024)
-    #     #         str_data = data.decode("utf8")
-    #     #         if str_data == "quit":
-    #     #             break
-    #     #         """if not data:
-    #     #             break
-    #     #         """
-    #     #         print("Client: " + str_data)
+    try:
+        print('waiting')
 
-    #     #         # Server send input
-    #     #         msg = input("Server: ")
-    #     #         conn.sendall(bytes(msg, "utf8"))
-    #     finally:
-    #         conn.close()
-    #         s.close()
+        while True:
+            conn, addr = s.accept()
 
-    conn.close()
-    s.close()
+            clientThread = threading.Thread(target=client_Handle, args=(conn,addr))
+            clientThread.daemon = True 
+            clientThread.start()
 
+    except KeyboardInterrupt:
+        print("error")
+        s.close()
 
-class Book_Admin(tk.Tk):
-    def __init__(self, *args, **kwargs):
-        tk.Tk.__init__(self, *args, **kwargs)
-
-        # self.icon=PhotoImage(file='soccer_ball.png')
-        # self.iconphoto(False,self.icon)
-        self.title("Book Sever")
-        self.geometry("500x200")
-        self.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.resizable(width=False, height=False)
-
-        container = tk.Frame(self)
-        container.pack(side="top", fill = "both", expand = True)
-        
-        container.grid_rowconfigure(0, weight=1)
-        container.grid_columnconfigure(0, weight=1)
-
-        self.frames = {}
-        for F in (StartPage,HomePage):
-            frame = F(container, self)
-
-            self.frames[F] = frame 
-
-            frame.grid(row=0, column=0, sticky="nsew")
-
-        self.showFrame(StartPage)
-
-
-    def showFrame(self, container):
-        
-        frame = self.frames[container]
-        if container==HomePage:
-            self.geometry("500x350")
-        else:
-            self.geometry("500x200")
-        frame.tkraise()
-
-    # close-programe function
-    def on_closing(self):
-        if messagebox.askokcancel("Quit", "Do you want to quit?"):
-            self.destroy()
-
-    def logIn(self,curFrame):
-
-        user = curFrame.entry_user.get()
-        pswd = curFrame.entry_pswd.get()
-
-        if pswd == "":
-            curFrame.label_notice["text"] = "password cannot be empty"
-            return 
-
-        if user == "admin" and pswd == "server":
-            self.showFrame(HomePage)
-            curFrame.label_notice["text"] = ""
-        else:
-            curFrame.label_notice["text"] = "invalid username or password"
-
-class StartPage(tk.Frame):
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-        self.configure(bg="bisque2")
-        
-        
-        label_title = tk.Label(self, text="\nLOG IN FOR SEVER\n", font=LARGE_FONT,fg='#20639b',bg="bisque2").grid(row=0,column=1)
-
-        label_user = tk.Label(self, text="\tUSERNAME ",fg='#20639b',bg="bisque2",font='verdana 10 bold').grid(row=1,column=0)
-        label_pswd = tk.Label(self, text="\tPASSWORD ",fg='#20639b',bg="bisque2",font='verdana 10 bold').grid(row=2,column=0)
-
-        self.label_notice = tk.Label(self,text="",bg="bisque2",fg='red')
-        self.entry_user = tk.Entry(self,width=30,bg='light yellow')
-        self.entry_pswd = tk.Entry(self,width=30,bg='light yellow')
-
-        button_log = tk.Button(self,text="LOG IN",bg="#20639b",fg='floral white',command=lambda: controller.logIn(self))
-
-        button_log.grid(row=4,column=1)
-        button_log.configure(width=10)
-        self.label_notice.grid(row=3,column=1)
-        self.entry_pswd.grid(row=2,column=1)
-        self.entry_user.grid(row=1,column=1)
-
-
-class HomePage(tk.Frame):
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent) 
-        self.configure(bg="bisque2")
-        label_title = tk.Label(self, text="\n ACTIVE ACCOUNT ON SEVER\n", font=LARGE_FONT,fg='#20639b',bg="bisque2").pack()
-        
-        self.conent =tk.Frame(self)
-        self.data = tk.Listbox(self.conent, height = 10, 
-                  width = 40, 
-                  bg='floral white',
-                  activestyle = 'dotbox', 
-                  font = "Helvetica",
-                  fg='#20639b')
-        
-        # button_log = tk.Button(self,text="REFRESH",bg="#20639b",fg='floral white',command=self.Update_Client)
-        # button_back = tk.Button(self, text="LOG OUT",bg="#20639b",fg='floral white' ,command=lambda: controller.showFrame(StartPage))
-
-        button_log = tk.Button(self,text="REFRESH",bg="#20639b",fg='floral white')
-        button_back = tk.Button(self, text="LOG OUT",bg="#20639b",fg='floral white')
-
-        button_log.pack(side= BOTTOM)
-        button_log.configure(width=10)
-        button_back.pack(side=BOTTOM)
-        button_back.configure(width=10)
-        
-        self.conent.pack_configure()
-        self.scroll= tk.Scrollbar(self.conent)
-        self.scroll.pack(side = RIGHT, fill= BOTH)
-        self.data.config(yscrollcommand = self.scroll.set)
-        
-        self.scroll.config(command = self.data.yview)
-        self.data.pack()
-        
-    # def Update_Client(self):
-    #     self.data.delete(0,len(Live_Account))
-    #     for i in range(len(Live_Account)):
-    #         self.data.insert(i,Live_Account[i])
-    
-
+    finally:
+        conn.close()
+        s.close()
 
 def connect_db():
     server = SERVER_NAME
     database = DATABASE_NAME
-    username =  "sv"
+    username =  "sa"
     password = "svcntt"
-    cnxn = pyodbc.Connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
+    cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
     cursor = cnxn.cursor()
     return cursor
 
@@ -203,12 +72,14 @@ def check_clientSignup(username):
         parse_check = parse_check[:parse]
         if parse_check == username:
             return False
-        return True
+        
+    return True
 
 
 live_Account = []
 ID = []
 AD = []
+LARGE_FONT = ("verdana", 13,"bold")
 
 def check_liveAccount(username):
     for row in live_Account:
@@ -372,9 +243,36 @@ def client_Search(socket):
     msg = "end"
     socket.sendall(msg.encode(FORMAT))
 
-def clien_Handle(conn, addr):
+def client_Download(socket):
+    id = socket.recv(1024).decode(FORMAT)
 
-    option = conn.recev(1024).decode(FORMAT)
+    
+    filename = "data.txt"
+    file = open(filename, "r")
+    data = file.read()
+
+    socket.sendall(data.encode(FORMAT))
+
+    file.close()
+    # book = find_1Match(id)
+    # if book == False:
+    #     msg = "no id"
+    #     socket.sendall(msg.encode(FORMAT))
+    # else:
+    #     filename = "data.txt"
+    #     file = open(filename, "r")
+    #     data = file.read()
+
+    #     socket.sendall(data.encode(FORMAT))
+    #     file.close()
+
+
+    msg = "end"
+    socket.sendall(msg.encode(FORMAT))
+
+def client_Handle(conn, addr):
+
+    option = conn.recv(1024).decode(FORMAT)
 
     if option == LOGIN:
         AD.append(str(addr))
@@ -388,12 +286,132 @@ def clien_Handle(conn, addr):
 
     elif option == SEARCH:
         client_Search(conn)
+
+    elif option == DOWNBOOK:
+        client_Download(conn)
     
     remove_liveAccount(conn, addr)
     conn.close
     print("end")
 
+class Book_admin(tk.Tk):
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
 
+        self.icon=PhotoImage(file='book.png')
+        self.iconphoto(False,self.icon)
+        self.title("Book Sever")
+        self.geometry("500x200")
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.resizable(width=False, height=False)
 
-app = Book_Admin()
+        container = tk.Frame(self)
+        container.pack(side="top", fill = "both", expand = True)
+        
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+
+        self.frames = {}
+        for F in (Start_Page,Home_Page):
+            frame = F(container, self)
+
+            self.frames[F] = frame 
+
+            frame.grid(row=0, column=0, sticky="nsew")
+
+        self.showFrame(Start_Page)
+
+    def showFrame(self, container):
+        
+        frame = self.frames[container]
+        if container==Home_Page:
+            self.geometry("500x350")
+        else:
+            self.geometry("500x200")
+        frame.tkraise()
+    
+    def on_closing(self):
+        if messagebox.askokcancel("Quit", "Do you want to quit?"):
+            self.destroy()
+
+    def logIn(self,curFrame):
+
+        user = curFrame.entry_user.get()
+        pswd = curFrame.entry_pswd.get()
+
+        if pswd == "":
+            curFrame.label_notice["text"] = "password cannot be empty"
+            return 
+
+        if user == "admin" and pswd == "admin2021":
+            self.showFrame(Home_Page)
+            curFrame.label_notice["text"] = ""
+        else:
+            curFrame.label_notice["text"] = "invalid username or password"
+
+class Start_Page(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.configure(bg="#b08968")
+        
+        
+        label_title = tk.Label(self, text="\nLOG IN FOR SEVER\n", font=LARGE_FONT,fg='#ede0d4',bg="#b08968").grid(row=0,column=1)
+
+        label_user = tk.Label(self, text="\tUSERNAME ",fg='#ede0d4',bg="#b08968",font='verdana 10 bold').grid(row=1,column=0)
+        label_pswd = tk.Label(self, text="\tPASSWORD ",fg='#ede0d4',bg="#b08968",font='verdana 10 bold').grid(row=2,column=0)
+
+        self.label_notice = tk.Label(self,text="",bg="#b08968",fg='red')
+        self.entry_user = tk.Entry(self,width=30,bg='light yellow')
+        self.entry_pswd = tk.Entry(self,width=30,bg='light yellow')
+
+        button_log = tk.Button(self,text="LOG IN",bg="#ede0d4",fg='#7f5539',command=lambda: controller.logIn(self))
+
+        button_log.grid(row=4,column=1)
+        button_log.configure(width=10)
+        self.label_notice.grid(row=3,column=1)
+        self.entry_pswd.grid(row=2,column=1)
+        self.entry_user.grid(row=1,column=1)
+
+class Home_Page(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent) 
+        self.configure(bg="#b08968")
+        label_title = tk.Label(self, text="\n ACTIVE ACCOUNT ON SEVER\n", font=LARGE_FONT,fg='#ede0d4',bg="#b08968").pack()
+        
+        self.conent =tk.Frame(self)
+        self.data = tk.Listbox(self.conent, height = 10, 
+                  width = 40, 
+                  bg='floral white',
+                  activestyle = 'dotbox', 
+                  font = "Helvetica",
+                  fg='#ede0d4')
+        
+        button_log = tk.Button(self,text="REFRESH",bg="#ede0d4",fg='#7f5539',command=self.Update_Client)
+        button_back = tk.Button(self, text="LOG OUT",bg="#ede0d4",fg='#7f5539' ,command=lambda: controller.showFrame(Start_Page))
+        button_log.pack(side= BOTTOM)
+        button_log.configure(width=10)
+        button_back.pack(side=BOTTOM)
+        button_back.configure(width=10)
+        
+        self.conent.pack_configure()
+        self.scroll= tk.Scrollbar(self.conent)
+        self.scroll.pack(side = RIGHT, fill= BOTH)
+        self.data.config(yscrollcommand = self.scroll.set)
+        
+        self.scroll.config(command = self.data.yview)
+        self.data.pack()
+        
+    def Update_Client(self):
+        self.data.delete(0,len(live_Account))
+        for i in range(len(live_Account)):
+            self.data.insert(i,live_Account[i])
+#main
+
+sThread = threading.Thread(target=run_Server)
+sThread.daemon = True   
+sThread.start()
+
+app = Book_admin()
 app.mainloop()
+
+
