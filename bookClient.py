@@ -279,10 +279,10 @@ class HomePage(tk.Frame):
 
         
     
-    def recieveMatches(self):
-        match = []
+    def recieveBooks(self):
+        book = []
     
-        matches = []
+        books = []
         data = ''
         while True:
             data = client.recv(1024).decode(FORMAT)
@@ -290,18 +290,18 @@ class HomePage(tk.Frame):
             if data == "end":
                 break
             
-            # match : [ID, TeamA, TeamB, Score, Date, Time]
+            # match : [ID, Book_Name, Author, Publishing_year]
 
             for i in range(6):
                 data = client.recv(1024).decode(FORMAT)
                 client.sendall(data.encode(FORMAT))
-                match.append(data) 
+                book.append(data) 
 
             
-            matches.append(match)
-            match = []
+            books.append(book)
+            book = []
 
-        return matches
+        return books
 
     def listAll(self):
         try:
@@ -310,14 +310,14 @@ class HomePage(tk.Frame):
             option = LIST
             client.sendall(option.encode(FORMAT))
             
-            matches = self.recieveMatches()
+            books = self.recieveBooks()
             
             x = self.tree.get_children()
             for item in x:
                 self.tree.delete(item)
 
             i = 0
-            for m in matches:
+            for m in books:
                 self.tree.insert(parent="", index="end", iid=i, 
                         values=( m[0], m[1], m[3], m[2], checkTime(m[4], m[5]) ) )
                 
@@ -329,17 +329,17 @@ class HomePage(tk.Frame):
             
 
 
-    def receive1Match(self):
+    def receive1Book(self):
               
         data = ""
-        match = []
+        book = []
 
         for i in range(6):
             data = client.recv(1024).decode(FORMAT)
             client.sendall(data.encode(FORMAT))
-            match.append(data) 
+            book.append(data) 
 
-        return match
+        return book
 
     
 
@@ -383,8 +383,8 @@ class HomePage(tk.Frame):
 
             self.frame_list.pack_forget()
             
-            # detail = [ID, team, event, player, time]
-            # match : [ID, TeamA, TeamB, Score, Date, Time]
+            # detail = [ID, name, author, publishing_year]
+            # book : [ID, TeamA, TeamB, Score, Date, Time]??
             
 
             client.sendall(id.encode(FORMAT))
@@ -399,7 +399,7 @@ class HomePage(tk.Frame):
             for item in x:
                 self.tree_detail.delete(item)
 
-            m = self.receive1Match()
+            m = self.receive1Book()
 
             d = self.receiveDetails()
 
@@ -416,8 +416,6 @@ class HomePage(tk.Frame):
             self.frame_detail.pack()
         except:
             self.label_notice["text"] = "Error"
-
-
 
 class AdminPage(tk.Frame):
     def __init__(self, parent, controller):
