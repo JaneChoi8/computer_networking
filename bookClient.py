@@ -290,7 +290,7 @@ class HomePage(tk.Frame):
             if data == "end":
                 break
             
-            # match : [ID, Book_Name, Author, Publishing_year]
+            # book : [ID, Book_Name, Author, Publishing_year]
 
             for i in range(6):
                 data = client.recv(1024).decode(FORMAT)
