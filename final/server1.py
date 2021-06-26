@@ -18,7 +18,10 @@ FORMAT = "utf-8"
 LOGIN = "login"
 LOGOUT = "logout"
 SIGNUP = "signup"
-SEARCH = "search"
+SEARCH = "searchID"
+SEARCHNAME = "searchNAME"
+SEARCHYEAR = "searchYEAR"
+SEARCHAU = "searchAU"
 DOWNLOAD = "download"
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
@@ -32,7 +35,7 @@ def run_Server():
         while True:
             conn, addr = s.accept()
 
-            clientThread = threading.Thread(target=clien_Handle, args=(conn,addr))
+            clientThread = threading.Thread(target=client_Handle, args=(conn,addr))
             clientThread.daemon = True 
             clientThread.start()
 
@@ -49,7 +52,7 @@ def connect_db():
     database = DATABASE_NAME
     username =  "CN"
     password = "123456"
-    cnxn = pyodbc.Connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
+    cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
     cursor = cnxn.cursor()
     return cursor
 
@@ -70,7 +73,8 @@ def check_clientSignup(username):
         parse_check = parse_check[:parse]
         if parse_check == username:
             return False
-        return True
+
+    return True
 
 
 live_Account = []
@@ -166,7 +170,7 @@ def signup(socket, addr):
     print ("end-login")
     print("")
 
-def get_all_ID():
+def get_all_IDS(id):
     cursor = connect_db()
     cursor.execute("SELECT ID FROM BOOKS")
     results =  []
@@ -187,7 +191,7 @@ def insert_NewBook(socket):
         socket.sendall(data.encode(FORMAT))
         match.append(data)
 
-    res = get_all_ID()
+    res = get_all_IDS()
     for row in res:
         if row == match[0]:
             socket.sendall("failed".endcode(FORMAT))
@@ -206,7 +210,7 @@ def insert_NewBook(socket):
     return True
 
 def find_1Match(id):
-    ids = get_all_ID()
+    ids = get_all_IDS(id)
     for row in ids:
         if row == id:
             cursor = connect_db()
@@ -215,15 +219,30 @@ def find_1Match(id):
             return match
     return False
 
-def getMatchs():
-    cursor = connect_db()
-    cursor.execute("SELECT * FROM BOOKS")
-    results = []
+def getBooks(socket,use):
+    new = find(use)
+    need = socket.recv(1024).decode(FORMAT)
+    if new == "not found":
+        socket.sendall(new.encode(FORMAT))
+    
+    else:
+        cursor = connect_db()
+        sql = "SELECT * FROM BOOKS WHERE "+new+" = ?"
+        cursor.execute(sql, need)
+        results = []
 
-    for row in cursor:
-        results.append(row)
+        for row in cursor:
+            results.append(row)
 
-    return results
+        socket.sendall(results.encode(FORMAT))
+
+def find(aru):
+    switcher={
+                "searchNAME":'BOOK_NAME',
+                "searchYEAR":'PUBLICING_YEAR',
+                "searchAU":'AUTHOR',
+            }
+    return switcher.get(aru,"not found")
 
 def client_Search(socket):
     id = socket.recv(1024).decode(FORMAT)
@@ -234,8 +253,7 @@ def client_Search(socket):
         socket.sendall(msg.encode(FORMAT))
 
     else:
-        msg = "find"
-        socket.sendall(msg.encode(FORMAT))
+        socket.sendall(match.encode(FORMAT))
 
     msg = "end"
     socket.sendall(msg.encode(FORMAT))
@@ -256,25 +274,35 @@ def client_Download(socket):
     msg = "end"
     socket.sendall(msg.encode(FORMAT))
 
-def clien_Handle(conn, addr):
+def client_Handle(conn, addr):
+    while True:
 
-    option = conn.recev(1024).decode(FORMAT)
+        option = conn.recv(1024).decode(FORMAT)
 
-    if option == LOGIN:
-        AD.append(str(addr))
-        login(conn)
+        if option == LOGIN:
+            AD.append(str(addr))
+            login(conn)
 
-    elif option == LOGOUT:
-        remove_liveAccount(conn,addr)
-    
-    elif option == SIGNUP:
-        signup(conn, addr)
+        elif option == LOGOUT:
+            remove_liveAccount(conn,addr)
+        
+        elif option == SIGNUP:
+            signup(conn, addr)
 
-    elif option == SEARCH:
-        client_Search(conn)
+        elif option == SEARCH:
+            client_Search(conn)
+        
+        elif option == SEARCHNAME:
+            getBooks(conn, SEARCHNAME)
+        
+        elif option == SEARCHAU:
+            getBooks(conn, SEARCHAU)
 
-    elif option == DOWNLOAD:
-        client_Download(conn)
+        elif option == SEARCHYEAR:
+            getBooks(conn, SEARCHYEAR)
+
+        elif option == DOWNLOAD:
+            client_Download(conn)
     
     remove_liveAccount(conn, addr)
     conn.close
@@ -391,6 +419,8 @@ class Home_Page(tk.Frame):
         self.data.delete(0,len(live_Account))
         for i in range(len(live_Account)):
             self.data.insert(i,live_Account[i])
+            print(self.data)
+
 #main
 
 sThread = threading.Thread(target=run_Server)
