@@ -11,7 +11,8 @@ from tkinter.ttk import *
 
 HOST = "127.0.0.1"
 PORT = 65234
-SERVER_NAME = "LAPTOP-KE9CGLR8\JC"
+SERVERNAME_NGOCHA = "LAPTOP-KE9CGLR8\JC"
+SERVERNAME_MINHXUAN = "LAPTOP-4NSV7IEE"
 DATABASE_NAME = 'BOOKSMANAGER'
 FORMAT = "utf-8"
 
@@ -49,11 +50,15 @@ def run_Server():
         s.close()
 
 def connect_db():
-    server = SERVER_NAME
+    #server = SERVERNAME_NGOCHA
+    server = SERVERNAME_MINHXUAN
     database = DATABASE_NAME
-    username =  "CN"
-    password = "123456"
-    cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
+    username_xuan = "sa"
+    password_xuan = "svcntt"
+    #username =  "CN"
+    #password = "123456"
+    #cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
+    cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username_xuan+';PWD='+ password_xuan)
     cursor = cnxn.cursor()
     return cursor
 
