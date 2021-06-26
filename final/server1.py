@@ -23,6 +23,7 @@ SEARCHNAME = "searchNAME"
 SEARCHYEAR = "searchYEAR"
 SEARCHAU = "searchAU"
 DOWNLOAD = "download"
+LIST = "listall"
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 s.bind((HOST, PORT))
@@ -100,7 +101,7 @@ def remove_liveAccount(conn, addr):
             user = row[(parse+1):]
             ID.remove(user)
             live_Account.remove(row)
-            conn.sendall("TRUE".encode(FORMAT))
+            conn.sendall("True".encode(FORMAT))
 
 def check_login(username, pw):
     cursor = connect_db()
@@ -181,6 +182,18 @@ def get_all_IDS(id):
         parse_check = parse_check[:parse]
         results.append(parse_check)
     return results
+
+def get_all(socket):
+    cursor = connect_db()
+    cursor.execute("SELECT * FROM BOOKS")
+    results =  []
+    for row in cursor:
+        parse = str(row)
+        parse_check = parse[2:]
+        parse = parse_check.find("'")
+        parse_check = parse_check[:parse]
+        results.append(parse_check)
+    socket.sendall(results.encode(FORMAT))
 
 def insert_NewBook(socket):
     data = ""
@@ -303,6 +316,8 @@ def client_Handle(conn, addr):
 
         elif option == DOWNLOAD:
             client_Download(conn)
+        elif option == LIST:
+            get_all(conn)
     
     remove_liveAccount(conn, addr)
     conn.close
@@ -398,7 +413,7 @@ class Home_Page(tk.Frame):
                   bg='floral white',
                   activestyle = 'dotbox', 
                   font = "Helvetica",
-                  fg='#ede0d4')
+                  fg='#9c6644')
         
         button_log = tk.Button(self,text="REFRESH",bg="#ede0d4",fg='#7f5539',command=self.Update_Client)
         button_back = tk.Button(self, text="LOG OUT",bg="#ede0d4",fg='#7f5539' ,command=lambda: controller.showFrame(Start_Page))
