@@ -4,7 +4,7 @@ from tkinter import messagebox
 from tkinter import ttk 
 import threading
 from datetime import datetime
-from tkinter.constants import BOTTOM
+
 
 HOST = "127.0.0.1"
 PORT = 65234
@@ -45,7 +45,7 @@ class Books_App(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, HomePage):
+        for F in (StartPage, HomePage, SearchPage):
             frame = F(container, self)
 
             self.frames[F] = frame 
@@ -57,6 +57,8 @@ class Books_App(tk.Tk):
     def showFrame(self, container):
         frame = self.frames[container]
         if container==HomePage:
+            self.geometry("700x500")
+        elif container == SearchPage:
             self.geometry("700x500")
         else:
             self.geometry("500x200")
@@ -195,29 +197,49 @@ class StartPage(tk.Frame):
         button_sign.pack()
 
 
-
-
-
 class HomePage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.configure(bg="#b08968")
         
         label_title = tk.Label(self, text="HOME PAGE", font=LARGE_FONT,fg='#ede0d4',bg="#b08968")
-        button_back = tk.Button(self, text="Go back",bg="#ede0d4",fg='#7f5539', command=lambda: controller.logout(self,client))
-        button_list = tk.Button(self, text="List all",bg="#ede0d4",fg='#7f5539')
+        button_back = tk.Button(self, text="Logout",bg="#ede0d4",fg='#7f5539', command=lambda: controller.logout(self,client))
+        button_list = tk.Button(self, text="List all",bg="#ede0d4",fg='#7f5539',command=lambda: controller.listall(self,client))
+        button_search = tk.Button(self, text="Search",bg="#ede0d4",fg='#7f5539',command=lambda: controller.showFrame(SearchPage))
 
         label_title.pack(pady=10)
         button_back.pack()
         button_back.configure(width=10)
         button_list.pack()
         button_list.configure(width=10)
-
-        
-        
+        button_search.pack()
+        button_search.configure(width=10)
 
 
         #code them UI o day
+    def recieveBooks(self):
+        book = []
+    
+        books = []
+        data = ''
+        while True:
+            data = client.recv(1024).decode(FORMAT)
+            client.sendall(data.encode(FORMAT))
+            if data == "end":
+                break
+            
+            # book : [ID, Book_Name, Author, Publishing_year]
+
+            for i in range(6):
+                data = client.recv(1024).decode(FORMAT)
+                client.sendall(data.encode(FORMAT))
+                book.append(data) 
+
+            
+            books.append(book)
+            book = []
+
+        return books
 
     def listAll(self):
         try:
@@ -243,10 +265,36 @@ class HomePage(tk.Frame):
         except:
             self.label_notice["text"] = "Error"
             
+class SearchPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.configure(bg="#b08968")
+        
+        label_title = tk.Label(self, text="SEARCH PAGE", font=LARGE_FONT,fg='#ede0d4',bg="#b08968")
+        button_searchID = tk.Button(self, text="Search ID",bg="#ede0d4",fg='#7f5539', command=lambda: controller.logout(self,client))
+        button_searchNAME = tk.Button(self, text="Search NAME",bg="#ede0d4",fg='#7f5539')
+        button_searchAU = tk.Button(self, text="Search AUTHOR",bg="#ede0d4",fg='#7f5539')
+        button_searchYEAR = tk.Button(self, text="Search PUBLICING YEAR",bg="#ede0d4",fg='#7f5539')
+        button_back = tk.Button(self, text="Go back",bg="#ede0d4",fg='#7f5539', command=lambda: controller.showFrame(HomePage))
+
+        label_title.pack(pady=10)
+
+        self.entry_user = tk.Entry(self,width=45,bg='light yellow')
+        self.entry_user.pack()
+
+        button_searchID.pack()
+        button_searchID.configure(width=20)
+        button_searchNAME.pack()
+        button_searchNAME.configure(width=20)
+        button_searchAU.pack()
+        button_searchAU.configure(width=20)
+        button_searchYEAR.pack()
+        button_searchYEAR.configure(width=20)
+        button_back.pack()
+        button_back.configure(width=20)
 
 
-    
-
+        #code them UI o day
 
 
 
