@@ -167,6 +167,8 @@ class Books_App(tk.Tk):
         except:
             curFrame.label_notice["text"] = "Error: Server is not responding"
 
+    def listall(self, curFrame, sck):
+        pass
 
 class StartPage(tk.Frame):
     def __init__(self, parent, controller):
