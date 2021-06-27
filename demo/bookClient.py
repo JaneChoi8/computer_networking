@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk 
 import threading
+from tkinter.constants import BOTTOM
 
 
 
@@ -298,6 +299,7 @@ class SearchPage(tk.Frame):
         button_searchAU = tk.Button(self, text="Search AUTHOR",bg="#ede0d4",fg='#7f5539', command= self.listAU)
         button_searchTYPE = tk.Button(self, text="Search TYPE",bg="#ede0d4",fg='#7f5539', command= self.listTYPE)
         button_back = tk.Button(self, text="Go back",bg="#ede0d4",fg='#7f5539', command=lambda: controller.showFrame(HomePage))
+        button_download = tk.Button(self, text="Download",bg="#ede0d4",fg='#7f5539', command= self.downloadFILE)
 
         label_title.pack(pady=10)
 
@@ -314,6 +316,8 @@ class SearchPage(tk.Frame):
         button_searchTYPE.configure(width=20)
         button_back.pack()
         button_back.configure(width=20)
+        button_download.pack(side=BOTTOM)
+        button_download.configure(width=20)
 
         self.label_notice = tk.Label(self, text="", bg="#b08968" )
         self.label_notice.pack(pady=4)
@@ -490,6 +494,16 @@ class SearchPage(tk.Frame):
             self.frame_list.pack(pady=10)
         except:
             self.label_notice["text"] = "Error"
+
+    def downloadFILE(self):
+        msg = "1"
+        client.sendall(msg.encode(FORMAT))
+
+        file = open("clientData.txt", "w")
+        data = client.recv(10240).decode(FORMAT)
+        file.write(data)
+        file.close()
+
 
 #GLOBAL socket initialize
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
