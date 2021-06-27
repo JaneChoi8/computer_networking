@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk 
 import threading
-from datetime import datetime
+
 
 
 HOST = "127.0.0.1"
@@ -20,14 +20,11 @@ LOGIN = "login"
 LOGOUT = "logout"
 SEARCH = "search"
 LIST = "listall"
+SEARCH = "searchID"
+SEARCHNAME = "searchNAME"
+SEARCHTYPE = "searchTYPE"
+SEARCHAU = "searchAU"
 
-ADMIN_USERNAME = 'admin'
-ADMIN_PSWD = 'database'
-
-INSERT_NEW_MATCH='insert_a_match'
-UPDATE_SCORE = "upd_score"
-UPDATE_DATETIME = "upd_date_time"
-INSERT_DETAIL = "insert_detail"
 
 #GUI intialize
 class Books_App(tk.Tk):
@@ -166,7 +163,7 @@ class Books_App(tk.Tk):
                 self.showFrame(StartPage)
         except:
             curFrame.label_notice["text"] = "Error: Server is not responding"
-
+    
 
 class StartPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -204,7 +201,7 @@ class HomePage(tk.Frame):
         
         label_title = tk.Label(self, text="HOME PAGE", font=LARGE_FONT,fg='#ede0d4',bg="#b08968")
         button_back = tk.Button(self, text="Logout",bg="#ede0d4",fg='#7f5539', command=lambda: controller.logout(self,client))
-        button_list = tk.Button(self, text="List all",bg="#ede0d4",fg='#7f5539',command=lambda: controller.listall(self,client))
+        button_list = tk.Button(self, text="List all",bg="#ede0d4",fg='#7f5539',command=self.listAll)
         button_search = tk.Button(self, text="Search",bg="#ede0d4",fg='#7f5539',command=lambda: controller.showFrame(SearchPage))
 
         label_title.pack(pady=10)
@@ -215,8 +212,33 @@ class HomePage(tk.Frame):
         button_search.pack()
         button_search.configure(width=10)
 
+        self.label_notice = tk.Label(self, text="", bg="#b08968" )
+        self.label_notice.pack(pady=4)
+        
+        self.frame_list = tk.Frame(self, bg="tomato")
+        
+        self.tree = ttk.Treeview(self.frame_list)
+
+        
+        self.tree["column"] = ("ID", "BOOK NAME", "AUHTOR", "BOOK TYPE")
+        
+        
+        self.tree.column("#0", width=0, stretch=tk.NO)
+        self.tree.column("ID", anchor='c', width=50)
+        self.tree.column("BOOK NAME", anchor='c', width=200)
+        self.tree.column("AUHTOR", anchor='c', width=200)
+        self.tree.column("BOOK TYPE", anchor='c', width=200)
+
+        self.tree.heading("#0", text="", anchor='c')
+        self.tree.heading("ID", text="ID", anchor='c')
+        self.tree.heading("BOOK NAME", text="BOOK NAME", anchor='c')
+        self.tree.heading("AUHTOR", text="AUHTOR", anchor='c')
+        self.tree.heading("BOOK TYPE", text="BOOK TYPE", anchor='c')
+        
+        self.tree.pack(pady=20)
 
         #code them UI o day
+
     def recieveBooks(self):
         book = []
     
@@ -228,9 +250,9 @@ class HomePage(tk.Frame):
             if data == "end":
                 break
             
-            # book : [ID, Book_Name, Author, Publishing_year]
+            # book : [ID, Book_Name, Author, Type]
 
-            for i in range(6):
+            for i in range(4):
                 data = client.recv(1024).decode(FORMAT)
                 client.sendall(data.encode(FORMAT))
                 book.append(data) 
@@ -243,7 +265,7 @@ class HomePage(tk.Frame):
 
     def listAll(self):
         try:
-            self.frame_detail.pack_forget()
+            self.frame_list.pack_forget()
 
             option = LIST
             client.sendall(option.encode(FORMAT))
@@ -271,10 +293,10 @@ class SearchPage(tk.Frame):
         self.configure(bg="#b08968")
         
         label_title = tk.Label(self, text="SEARCH PAGE", font=LARGE_FONT,fg='#ede0d4',bg="#b08968")
-        button_searchID = tk.Button(self, text="Search ID",bg="#ede0d4",fg='#7f5539', command=lambda: controller.logout(self,client))
-        button_searchNAME = tk.Button(self, text="Search NAME",bg="#ede0d4",fg='#7f5539')
-        button_searchAU = tk.Button(self, text="Search AUTHOR",bg="#ede0d4",fg='#7f5539')
-        button_searchYEAR = tk.Button(self, text="Search PUBLICING YEAR",bg="#ede0d4",fg='#7f5539')
+        button_searchID = tk.Button(self, text="Search ID",bg="#ede0d4",fg='#7f5539', command= self.listID)
+        button_searchNAME = tk.Button(self, text="Search NAME",bg="#ede0d4",fg='#7f5539', command= self.listNAME)
+        button_searchAU = tk.Button(self, text="Search AUTHOR",bg="#ede0d4",fg='#7f5539', command= self.listAU)
+        button_searchTYPE = tk.Button(self, text="Search TYPE",bg="#ede0d4",fg='#7f5539', command= self.listTYPE)
         button_back = tk.Button(self, text="Go back",bg="#ede0d4",fg='#7f5539', command=lambda: controller.showFrame(HomePage))
 
         label_title.pack(pady=10)
@@ -288,15 +310,153 @@ class SearchPage(tk.Frame):
         button_searchNAME.configure(width=20)
         button_searchAU.pack()
         button_searchAU.configure(width=20)
-        button_searchYEAR.pack()
-        button_searchYEAR.configure(width=20)
+        button_searchTYPE.pack()
+        button_searchTYPE.configure(width=20)
         button_back.pack()
         button_back.configure(width=20)
 
+        self.label_notice = tk.Label(self, text="", bg="#b08968" )
+        self.label_notice.pack(pady=4)
+        
+        self.frame_list = tk.Frame(self, bg="tomato")
+        
+        self.tree = ttk.Treeview(self.frame_list)
 
-        #code them UI o day
+        self.tree['column'] = ("ID", "BOOK NAME", "AUHTOR", "BOOK TYPE")
 
+        self.tree.column("#0", width=0, stretch=tk.NO)
+        self.tree.column("ID", anchor='c', width=50)
+        self.tree.column("BOOK NAME", anchor='c', width=200)
+        self.tree.column("AUHTOR", anchor='c', width=200)
+        self.tree.column("BOOK TYPE", anchor='c', width=200)
 
+        self.tree.heading("#0", text="", anchor='c')
+        self.tree.heading("ID", text="ID", anchor='c')
+        self.tree.heading("BOOK NAME", text="BOOK NAME", anchor='c')
+        self.tree.heading("AUHTOR", text="AUHTOR", anchor='c')
+        self.tree.heading("BOOK TYPE", text="BOOK TYPE", anchor='c')
+        
+        self.tree.pack(pady=20)
+    
+    def recieveBooks(self):
+        book = []
+    
+        books = []
+        data = ''
+        while True:
+            data = client.recv(1024).decode(FORMAT)
+            client.sendall(data.encode(FORMAT))
+            if data == "end":
+                break
+            
+            # book : [ID, Book_Name, Author, Type]
+
+            for i in range(4):
+                data = client.recv(1024).decode(FORMAT)
+                client.sendall(data.encode(FORMAT))
+                book.append(data) 
+
+            
+            books.append(book)
+            book = []
+
+        return books
+
+    def listID(self):
+        try:
+            self.frame_list.pack_forget()
+
+            option = SEARCH
+            client.sendall(option.encode(FORMAT))
+            
+            books = self.recieveBooks()
+            
+            x = self.tree.get_children()
+            for item in x:
+                self.tree.delete(item)
+
+            i = 0
+            for m in books:
+                self.tree.insert(parent="", index="end", iid=i, 
+                        values=( m[0], m[1], m[3], m[2]) )
+                
+                i += 1
+
+            self.frame_list.pack(pady=10)
+        except:
+            self.label_notice["text"] = "Error"
+
+    def listNAME(self):
+        try:
+            self.frame_list.pack_forget()
+
+            option = SEARCHNAME
+            client.sendall(option.encode(FORMAT))
+            
+            books = self.recieveBooks()
+            
+            x = self.tree.get_children()
+            for item in x:
+                self.tree.delete(item)
+
+            i = 0
+            for m in books:
+                self.tree.insert(parent="", index="end", iid=i, 
+                        values=( m[0], m[1], m[3], m[2]) )
+                
+                i += 1
+
+            self.frame_list.pack(pady=10)
+        except:
+            self.label_notice["text"] = "Error"
+
+    def listAU(self):
+        try:
+            self.frame_list.pack_forget()
+
+            option = SEARCHAU
+            client.sendall(option.encode(FORMAT))
+            
+            books = self.recieveBooks()
+            
+            x = self.tree.get_children()
+            for item in x:
+                self.tree.delete(item)
+
+            i = 0
+            for m in books:
+                self.tree.insert(parent="", index="end", iid=i, 
+                        values=( m[0], m[1], m[3], m[2]) )
+                
+                i += 1
+
+            self.frame_list.pack(pady=10)
+        except:
+            self.label_notice["text"] = "Error"
+    
+    def listTYPE(self):
+        try:
+            self.frame_list.pack_forget()
+
+            option = SEARCHTYPE
+            client.sendall(option.encode(FORMAT))
+            
+            books = self.recieveBooks()
+            
+            x = self.tree.get_children()
+            for item in x:
+                self.tree.delete(item)
+
+            i = 0
+            for m in books:
+                self.tree.insert(parent="", index="end", iid=i, 
+                        values=( m[0], m[1], m[3], m[2]) )
+                
+                i += 1
+
+            self.frame_list.pack(pady=10)
+        except:
+            self.label_notice["text"] = "Error"
 
 #GLOBAL socket initialize
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

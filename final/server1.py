@@ -11,8 +11,7 @@ from tkinter.ttk import *
 
 HOST = "127.0.0.1"
 PORT = 65234
-SERVERNAME_NGOCHA = "LAPTOP-KE9CGLR8\JC"
-SERVERNAME_MINHXUAN = "LAPTOP-4NSV7IEE"
+SERVER_NAME = "LAPTOP-KE9CGLR8\JC"
 DATABASE_NAME = 'BOOKSMANAGER'
 FORMAT = "utf-8"
 
@@ -21,7 +20,7 @@ LOGOUT = "logout"
 SIGNUP = "signup"
 SEARCH = "searchID"
 SEARCHNAME = "searchNAME"
-SEARCHYEAR = "searchYEAR"
+SEARCHTYPE = "searchTYPE"
 SEARCHAU = "searchAU"
 DOWNLOAD = "download"
 LIST = "listall"
@@ -50,15 +49,11 @@ def run_Server():
         s.close()
 
 def connect_db():
-    #server = SERVERNAME_NGOCHA
-    server = SERVERNAME_MINHXUAN
+    server = SERVER_NAME
     database = DATABASE_NAME
-    username_xuan = "sa"
-    password_xuan = "svcntt"
-    #username =  "CN"
-    #password = "123456"
-    #cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
-    cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username_xuan+';PWD='+ password_xuan)
+    username =  "CN"
+    password = "123456"
+    cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
     cursor = cnxn.cursor()
     return cursor
 
@@ -122,7 +117,7 @@ def check_login(username, pw):
         parse = parse_check.find("'")
         parse_check = parse_check[:parse]
         if parse_check == username:
-            cursor.execute('SELECT M.PASS_WORD FROM MEMBERS M WHERE M.USERNAME = (?)', (username))
+            cursor.execute('SELECT M.PASS_WORD FROM MEMBERS M WHERE M.USERNAME = ?', username)
             parse = str(cursor.fetchone())
             parse_check = parse[2:]
             parse = parse_check.find("'")
@@ -188,44 +183,34 @@ def get_all_IDS(id):
         results.append(parse_check)
     return results
 
-def get_all(socket):
+def get_all():
     cursor = connect_db()
     cursor.execute("SELECT * FROM BOOKS")
-    results =  []
+    results = []
     for row in cursor:
-        parse = str(row)
-        parse_check = parse[2:]
-        parse = parse_check.find("'")
-        parse_check = parse_check[:parse]
-        results.append(parse_check)
-    socket.sendall(results.encode(FORMAT))
+        results.append(row)
 
-def insert_NewBook(socket):
-    data = ""
-    match = []
-    for i in range(4):
-        data = socket.recv(1024).decode(FORMAT)
-        print(data)
-        socket.sendall(data.encode(FORMAT))
-        match.append(data)
+    return results
 
-    res = get_all_IDS()
-    for row in res:
-        if row == match[0]:
-            socket.sendall("failed".endcode(FORMAT))
-            return FALSE
+def clientListBooks(socket):
+    books = get_all()
     
-    try:
-        cursor = connect_db()
-        cursor.execute("INSERT INTO BOOKS (ID, BOOK_NAME, AUTHOR, PUBLICING_YEAR) VALUES (?,?,?,?)", (match[0], match[1], match[2], match[3], match[4]))
-        cursor.commit
+    for book in books:
+        msg = "next"
+        socket.sendall(msg.encode(FORMAT))
+        socket.recv(1024)
 
-    except pyodbc.Error:
-        socket.sendall("failed".encode(FORMAT))
-        return False
+        for data in book:
+            data = str(data)
+            print(data, end=' ')
+            socket.sendall(data.encode(FORMAT))
+            socket.recv(1024)
 
-    socket.sendall("success".encode(FORMAT))
-    return True
+    
+    msg = "end"
+    socket.sendall(msg.encode(FORMAT))
+    socket.recv(1024)
+
 
 def find_1Match(id):
     ids = get_all_IDS(id)
@@ -246,18 +231,32 @@ def getBooks(socket,use):
     else:
         cursor = connect_db()
         sql = "SELECT * FROM BOOKS WHERE "+new+" = ?"
-        cursor.execute(sql, need)
+        cursor.execute(sql, (need))
         results = []
 
         for row in cursor:
             results.append(row)
 
-        socket.sendall(results.encode(FORMAT))
+        for book in results:
+            msg = "next"
+            socket.sendall(msg.encode(FORMAT))
+            socket.recv(1024)
+
+        for data in book:
+            data = str(data)
+            print(data, end=' ')
+            socket.sendall(data.encode(FORMAT))
+            socket.recv(1024)
+
+    
+    msg = "end"
+    socket.sendall(msg.encode(FORMAT))
+    socket.recv(1024)
 
 def find(aru):
     switcher={
                 "searchNAME":'BOOK_NAME',
-                "searchYEAR":'PUBLICING_YEAR',
+                "searchTYPE":'BOOK_TYPE',
                 "searchAU":'AUTHOR',
             }
     return switcher.get(aru,"not found")
@@ -316,18 +315,21 @@ def client_Handle(conn, addr):
         elif option == SEARCHAU:
             getBooks(conn, SEARCHAU)
 
-        elif option == SEARCHYEAR:
-            getBooks(conn, SEARCHYEAR)
+        elif option == SEARCHTYPE:
+            getBooks(conn, SEARCHTYPE)
 
         elif option == DOWNLOAD:
             client_Download(conn)
+            
         elif option == LIST:
-            get_all(conn)
+            clientListBooks(conn)
     
     remove_liveAccount(conn, addr)
     conn.close
     print("end")
 
+
+#GUI intialize
 class Book_admin(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
