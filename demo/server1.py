@@ -223,14 +223,11 @@ def client_Search(socket, use):
         socket.sendall(msg.encode(FORMAT))
     
     else:
-        msg = "next-data"
-        socket.sendall(msg.encode(FORMAT))
-        msg = socket.recv(1024).decode(FORMAT)
-        print(msg)
 
         for book in books:
             msg = "next"
             socket.sendall(msg.encode(FORMAT))
+
             msg = socket.recv(1024).decode(FORMAT)
             print(msg)
                     
@@ -238,6 +235,8 @@ def client_Search(socket, use):
                 data = str(data)
                 print(data, end=' ')
                 socket.sendall(data.encode(FORMAT))
+
+                #wait for response
                 socket.recv(1024)
 
     

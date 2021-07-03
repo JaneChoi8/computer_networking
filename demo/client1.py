@@ -353,23 +353,33 @@ class SearchPage(tk.Frame):
         books = []
         data = ''
         
-        while True:
-            data = client.recv(1024).decode(FORMAT)
-            
-            if data == "end":
-                break
-            
-            # book : [ID, Book_Name, Author, Type]
+        
+        data = client.recv(1024).decode(FORMAT)
+        
+        if data == "not found":
+            return False
+        
+        # response
+        client.sendall(data.encode(FORMAT))
+        
+        # book : [ID, Book_Name, Author, Type]
+        while data == "next":
 
             for i in range(4):
                 data = client.recv(1024).decode(FORMAT)
+
+                #response
                 client.sendall(data.encode(FORMAT))
                 book.append(data) 
 
-            
+                
             books.append(book)
             book = []
 
+            data = client.recv(1024).decode(FORMAT)
+            client.sendall(data.encode(FORMAT))
+
+        client.sendall(data.encode(FORMAT))
         return books
 
     def listID(self):
@@ -389,19 +399,23 @@ class SearchPage(tk.Frame):
             client.sendall(id.encode(FORMAT))
             
             books = self.recieveBooks()
-            
-            x = self.tree.get_children()
-            for item in x:
-                self.tree.delete(item)
 
-            i = 0
-            for m in books:
-                self.tree.insert(parent="", index="end", iid=i, 
-                        values=( m[0], m[1], m[3], m[2]) )
-                
-                i += 1
+            if books == False:
+                self.label_notice["text"] = "This book isn't exits"
 
-            self.frame_list.pack(pady=10)
+            else:            
+                x = self.tree.get_children()
+                for item in x:
+                    self.tree.delete(item)
+
+                i = 0
+                for m in books:
+                    self.tree.insert(parent="", index="end", iid=i, 
+                            values=( m[0], m[1], m[2], m[3]) )
+                    
+                    i += 1
+
+                self.frame_list.pack(pady=10)
 
         except:
             self.label_notice["text"] = "Error"
@@ -409,9 +423,9 @@ class SearchPage(tk.Frame):
     def listNAME(self):
         try:
             self.label_notice["text"] = ""
-            id = self.entry_search.get()    
+            name = self.entry_search.get()    
             
-            if (id == ""):
+            if (name == ""):
                 self.label_notice["text"] = "Field cannot be empty"
                 return
 
@@ -420,78 +434,111 @@ class SearchPage(tk.Frame):
             option = SEARCHNAME
             client.sendall(option.encode(FORMAT))
 
-            client.sendall(id.encode(FORMAT))
-            msg = client.recv(1024).decode(FORMAT)
-            
-
-            if (msg == "not found"):
-                print("no found")
-                self.label_notice["text"] = "This book doesn't exist"
-                return
-
+            client.sendall(name.encode(FORMAT))
             
             books = self.recieveBooks()
             
-            x = self.tree.get_children()
-            for item in x:
-                self.tree.delete(item)
 
-            i = 0
-            for m in books:
-                self.tree.insert(parent="", index="end", iid=i, 
-                        values=( m[0], m[1], m[3], m[2]) )
-                
-                i += 1
+            if books == False:
+                self.label_notice["text"] = "This book isn't exits"
 
-            self.frame_list.pack(pady=10)
+            
+            else:
+            
+                x = self.tree.get_children()
+                for item in x:
+                    self.tree.delete(item)
+
+                i = 0
+                for m in books:
+                    self.tree.insert(parent="", index="end", iid=i, 
+                            values=( m[0], m[1], m[2], m[3]) )
+                    
+                    i += 1
+
+                self.frame_list.pack(pady=10)
+
         except:
             self.label_notice["text"] = "Error"
 
     def listAU(self):
         try:
+            self.label_notice["text"] = ""
+            author = self.entry_search.get()    
+            
+            if (author == ""):
+                self.label_notice["text"] = "Field cannot be empty"
+                return
+
             self.frame_list.pack_forget()
 
             option = SEARCHAU
             client.sendall(option.encode(FORMAT))
             
+            client.sendall(author.encode(FORMAT))
+            
             books = self.recieveBooks()
             
-            x = self.tree.get_children()
-            for item in x:
-                self.tree.delete(item)
 
-            i = 0
-            for m in books:
-                self.tree.insert(parent="", index="end", iid=i, 
-                        values=( m[0], m[1], m[3], m[2]) )
-                
-                i += 1
+            if books == False:
+                self.label_notice["text"] = "This author isn't exits"
 
-            self.frame_list.pack(pady=10)
+            
+            else:
+                x = self.tree.get_children()
+                for item in x:
+                    self.tree.delete(item)
+
+                i = 0
+                for m in books:
+                    self.tree.insert(parent="", index="end", iid=i, 
+                            values=( m[0], m[1], m[2], m[3]) )
+                    
+                    i += 1
+
+                self.frame_list.pack(pady=10)
+
         except:
             self.label_notice["text"] = "Error"
     
     def listTYPE(self):
         try:
+            self.label_notice["text"] = ""
+            b_type = self.entry_search.get()    
+            
+            if (b_type == ""):
+                self.label_notice["text"] = "Field cannot be empty"
+                return
+
             self.frame_list.pack_forget()
 
             option = SEARCHTYPE
             client.sendall(option.encode(FORMAT))
             
+            client.sendall(b_type.encode(FORMAT))
+            
             books = self.recieveBooks()
             
-            x = self.tree.get_children()
-            for item in x:
-                self.tree.delete(item)
 
-            i = 0
-            for m in books:
-                self.tree.insert(parent="", index="end", iid=i, 
-                        values=( m[0], m[1], m[3], m[2]) )
-                
-                i += 1
+            if books == False:
+                self.label_notice["text"] = "This type isn't exits"
 
-            self.frame_list.pack(pady=10)
+            
+            else:
+            
+                x = self.tree.get_children()
+                for item in x:
+                    self.tree.delete(item)
+
+                i = 0
+                for m in books:
+                    self.tree.insert(parent="", index="end", iid=i, 
+                            values=( m[0], m[1], m[2], m[3]) )
+                    
+                    i += 1
+
+                self.frame_list.pack(pady=10)
+
         except:
             self.label_notice["text"] = "Error"
 
