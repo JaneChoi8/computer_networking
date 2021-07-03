@@ -1,5 +1,4 @@
 import socket
-from typing import ForwardRef, Match
 import pyodbc
 import threading
 import tkinter as tk
@@ -224,11 +223,17 @@ def client_Search(socket, use):
         socket.sendall(msg.encode(FORMAT))
     
     else:
+        msg = "next-data"
+        socket.sendall(msg.encode(FORMAT))
+        msg = socket.recv(1024).decode(FORMAT)
+        print(msg)
+
         for book in books:
             msg = "next"
             socket.sendall(msg.encode(FORMAT))
-            socket.recv(1024)
-        
+            msg = socket.recv(1024).decode(FORMAT)
+            print(msg)
+                    
             for data in book:
                 data = str(data)
                 print(data, end=' ')
@@ -280,17 +285,16 @@ def find(aru):
 
 def client_Download(socket):
     id = socket.recv(1024).decode(FORMAT)
-    match = find_1Match(id)
-    if match == False:
+    if id == "":
         msg = "no id"
         socket.sendall(msg.encode(FORMAT))
     else:
         filename = "data.txt"
         file = open(filename, "r")
         data = file.read()
-
         socket.sendall(data.encode(FORMAT))
         file.close()
+
     msg = "end"
     socket.sendall(msg.encode(FORMAT))
 
@@ -298,6 +302,7 @@ def client_Handle(conn, addr):
     while True:
 
         option = conn.recv(1024).decode(FORMAT)
+        print(option)
 
         if option == LOGIN:
             AD.append(str(addr))
