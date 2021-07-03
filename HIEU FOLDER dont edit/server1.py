@@ -1,5 +1,6 @@
+
+
 import socket
-from typing import ForwardRef, Match
 import pyodbc
 import threading
 import tkinter as tk
@@ -8,13 +9,13 @@ from tkinter import ttk
 from tkinter import *
 from tkinter.ttk import *
 
-
-HOST = "127.0.0.1"
-PORT = 65234
-#SERVER_NAME = "LAPTOP-KE9CGLR8\JC"
 SERVER_NAME = "MON-PC\SQLEXPRESS"
 DATABASE_NAME = 'BOOKSMANAGER'
 FORMAT = "utf-8"
+
+HOST = "127.0.0.1"
+PORT = 65234
+
 
 LOGIN = "login"
 LOGOUT = "logout"
@@ -52,9 +53,7 @@ def run_Server():
 def connect_db():
     server = SERVER_NAME
     database = DATABASE_NAME
-    #username =  "CN"
-    #password = "123456"
-    username = "sa"
+    username =  "sa"
     password = "svcntt"
     cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
     cursor = cnxn.cursor()
@@ -214,6 +213,40 @@ def clientListBooks(socket):
     socket.sendall(msg.encode(FORMAT))
     socket.recv(1024)
 
+def client_Search(socket, use):
+    new = find(use)
+    print(new)
+    need = socket.recv(1024).decode(FORMAT)
+    print(need)
+
+    books = getBooks(new, need)
+
+    if books == False:
+        msg = "not found"
+        socket.sendall(msg.encode(FORMAT))
+    
+    else:
+
+        for book in books:
+            msg = "next"
+            socket.sendall(msg.encode(FORMAT))
+
+            msg = socket.recv(1024).decode(FORMAT)
+            print(msg)
+                    
+            for data in book:
+                data = str(data)
+                print(data, end=' ')
+                socket.sendall(data.encode(FORMAT))
+
+                #wait for response
+                socket.recv(1024)
+
+    
+    msg = "end"
+    socket.sendall(msg.encode(FORMAT))
+    socket.recv(1024)
+ 
 
 def find_1Match(id):
     ids = get_all_IDS(id)
@@ -225,72 +258,45 @@ def find_1Match(id):
             return match
     return False
 
-def getBooks(socket,use):
-    new = find(use)
-    need = socket.recv(1024).decode(FORMAT)
+def getBooks(new, need):
+    
     if new == "not found":
-        socket.sendall(new.encode(FORMAT))
+        return False
     
     else:
         cursor = connect_db()
         sql = "SELECT * FROM BOOKS WHERE "+new+" = ?"
+        print(sql)
         cursor.execute(sql, (need))
         results = []
 
         for row in cursor:
             results.append(row)
 
-        for book in results:
-            msg = "next"
-            socket.sendall(msg.encode(FORMAT))
-            socket.recv(1024)
-
-        for data in book:
-            data = str(data)
-            print(data, end=' ')
-            socket.sendall(data.encode(FORMAT))
-            socket.recv(1024)
-
+        return results
     
-    msg = "end"
-    socket.sendall(msg.encode(FORMAT))
-    socket.recv(1024)
-
 def find(aru):
     switcher={
+                "searchID":'ID',
                 "searchNAME":'BOOK_NAME',
                 "searchTYPE":'BOOK_TYPE',
                 "searchAU":'AUTHOR',
             }
     return switcher.get(aru,"not found")
 
-def client_Search(socket):
-    id = socket.recv(1024).decode(FORMAT)
-    
-    match = find_1Match(id)
-    if match == False:
-        msg = "no id"
-        socket.sendall(msg.encode(FORMAT))
-
-    else:
-        socket.sendall(match.encode(FORMAT))
-
-    msg = "end"
-    socket.sendall(msg.encode(FORMAT))
 
 def client_Download(socket):
     id = socket.recv(1024).decode(FORMAT)
-    match = find_1Match(id)
-    if match == False:
+    if id == "":
         msg = "no id"
         socket.sendall(msg.encode(FORMAT))
     else:
         filename = "data.txt"
         file = open(filename, "r")
         data = file.read()
-
         socket.sendall(data.encode(FORMAT))
         file.close()
+
     msg = "end"
     socket.sendall(msg.encode(FORMAT))
 
@@ -298,6 +304,7 @@ def client_Handle(conn, addr):
     while True:
 
         option = conn.recv(1024).decode(FORMAT)
+        print(option)
 
         if option == LOGIN:
             AD.append(str(addr))
@@ -310,16 +317,16 @@ def client_Handle(conn, addr):
             signup(conn, addr)
 
         elif option == SEARCH:
-            client_Search(conn)
+            client_Search(conn,SEARCH)
         
         elif option == SEARCHNAME:
-            getBooks(conn, SEARCHNAME)
+            client_Search(conn,SEARCHNAME)
         
         elif option == SEARCHAU:
-            getBooks(conn, SEARCHAU)
+            client_Search(conn,SEARCHAU)
 
         elif option == SEARCHTYPE:
-            getBooks(conn, SEARCHTYPE)
+            client_Search(conn,SEARCHTYPE)
 
         elif option == DOWNLOAD:
             client_Download(conn)

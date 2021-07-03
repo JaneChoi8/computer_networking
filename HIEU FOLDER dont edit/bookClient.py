@@ -1,8 +1,10 @@
 import socket
 import tkinter as tk 
-from tkinter import messagebox
+from tkinter import PhotoImage, messagebox
 from tkinter import ttk 
 import threading
+from tkinter.constants import BOTTOM
+from tkinter.font import Font
 
 
 
@@ -24,6 +26,8 @@ SEARCH = "searchID"
 SEARCHNAME = "searchNAME"
 SEARCHTYPE = "searchTYPE"
 SEARCHAU = "searchAU"
+DOWNLOAD = "download"
+
 
 
 #GUI intialize
@@ -31,6 +35,9 @@ class Books_App(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
         
+        self.icon=PhotoImage(file='book.png')
+        self.iconphoto(False,self.icon)
+        self.title("Book Client")
         self.geometry("500x200")
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.resizable(width=False, height=False)
@@ -298,11 +305,12 @@ class SearchPage(tk.Frame):
         button_searchAU = tk.Button(self, text="Search AUTHOR",bg="#ede0d4",fg='#7f5539', command= self.listAU)
         button_searchTYPE = tk.Button(self, text="Search TYPE",bg="#ede0d4",fg='#7f5539', command= self.listTYPE)
         button_back = tk.Button(self, text="Go back",bg="#ede0d4",fg='#7f5539', command=lambda: controller.showFrame(HomePage))
+        button_download = tk.Button(self, text="Download",bg="#ede0d4",fg='#7f5539', command= self.downloadFILE)
 
         label_title.pack(pady=10)
 
-        self.entry_user = tk.Entry(self,width=45,bg='light yellow')
-        self.entry_user.pack()
+        self.entry_search = tk.Entry(self,width=45,bg='light yellow')
+        self.entry_search.pack()
 
         button_searchID.pack()
         button_searchID.configure(width=20)
@@ -314,6 +322,8 @@ class SearchPage(tk.Frame):
         button_searchTYPE.configure(width=20)
         button_back.pack()
         button_back.configure(width=20)
+        button_download.pack(side=BOTTOM)
+        button_download.configure(width=20)
 
         self.label_notice = tk.Label(self, text="", bg="#b08968" )
         self.label_notice.pack(pady=4)
@@ -343,31 +353,51 @@ class SearchPage(tk.Frame):
     
         books = []
         data = ''
-        while True:
-            data = client.recv(1024).decode(FORMAT)
-            client.sendall(data.encode(FORMAT))
-            if data == "end":
-                break
-            
-            # book : [ID, Book_Name, Author, Type]
+        
+
+        data = client.recv(1024).decode(FORMAT)
+
+        if data == "not found":
+            return False
+        
+        # response
+        client.sendall(data.encode(FORMAT))
+
+        # book : [ID, Book_Name, Author, Type]
+        while data == "next":
 
             for i in range(4):
                 data = client.recv(1024).decode(FORMAT)
+
+                #response
                 client.sendall(data.encode(FORMAT))
                 book.append(data) 
 
-            
+        
             books.append(book)
             book = []
 
+            data = client.recv(1024).decode(FORMAT)
+
+        client.sendall(data.encode(FORMAT))
         return books
 
     def listID(self):
         try:
+            self.label_notice["text"] = ""
+            id = self.entry_search.get()    
+            
+            if id == "":
+                self.label_notice["text"] = "Field cannot be empty"
+                return
+
             self.frame_list.pack_forget()
 
             option = SEARCH
             client.sendall(option.encode(FORMAT))
+
+            client.sendall(id.encode(FORMAT))
+            
             
             books = self.recieveBooks()
             
@@ -383,15 +413,33 @@ class SearchPage(tk.Frame):
                 i += 1
 
             self.frame_list.pack(pady=10)
+
         except:
             self.label_notice["text"] = "Error"
 
     def listNAME(self):
         try:
+            self.label_notice["text"] = ""
+            id = self.entry_search.get()    
+            
+            if (id == ""):
+                self.label_notice["text"] = "Field cannot be empty"
+                return
+
             self.frame_list.pack_forget()
 
             option = SEARCHNAME
             client.sendall(option.encode(FORMAT))
+
+            client.sendall(id.encode(FORMAT))
+            msg = client.recv(1024).decode(FORMAT)
+            
+
+            if (msg == "not found"):
+                print("no found")
+                self.label_notice["text"] = "This book doesn't exist"
+                return
+
             
             books = self.recieveBooks()
             
@@ -455,6 +503,26 @@ class SearchPage(tk.Frame):
                 i += 1
 
             self.frame_list.pack(pady=10)
+        except:
+            self.label_notice["text"] = "Error"
+
+    def downloadFILE(self):
+        try:
+            option = DOWNLOAD
+            client.sendall(option.encode(FORMAT))
+            
+            msg = "1"
+            client.sendall(msg.encode(FORMAT))
+            data = client.recv(10240).decode(FORMAT)
+            if data == "no id":
+                self.label_notice["text"] = "Error"
+                return
+            else:
+                file = open("clientData.txt", "w") 
+                file.write(data)
+                file.close()
+                print("Download successfully")
+
         except:
             self.label_notice["text"] = "Error"
 
